@@ -1,0 +1,45 @@
+- hosts: all
+  become: true
+  gather_facts: true
+
+  tasks:
+  - name: install docker (Ubuntu)
+    apt:
+      name: docker.io
+      state: present
+
+  - name: user has write permissions
+    ansible.builtin.file:
+      path: /path/to
+      owner: "{{ ansible_user }}"
+      group: "{{ ansible_user }}"
+      mode: '0755'
+    become: true
+
+  - name: add docker to group
+    ansible.builtin.group:
+      name: bartolome-docker
+      state: present
+
+  - name: create destination directory
+    file:
+      path: /path/to
+      state: directory
+
+  - name: create dockerfile
+    copy:
+      content: |
+        FROM ubuntu:latest
+        RUN apt-get update && \
+            apt-get install -y apache2 mysql-server && \
+            apt-get clean && \
+            rm -rf /var/lib/apt/lists/*
+      dest: /path/to/Dockerfile
+    become: false
+
+  - name: build docker image
+    docker_image:
+      name: web-db-server:latest
+      build:
+        path: /path/to
+        pull: no
